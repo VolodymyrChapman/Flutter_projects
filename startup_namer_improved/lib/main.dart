@@ -3,78 +3,125 @@ import 'package:flutter/material.dart';
 
 void main() {
   runApp(const MyApp());
-}
+} // equivalent of Python if __name__ == __main__ - runs the file
 
+// initiate and set MyApp (widget) build constant features
 class MyApp extends StatelessWidget {
-  // stateless widgets are immutable
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
+      // don't understand why this became const for
+      // adding another page
       title: 'Startup Name Generator',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Startup Name Generator'),
-        ),
-        body: const Center(
-          child: RandomWords(),
-        ),
-      ),
+      home: RandomWords(), // Home screen
     );
   }
 }
 
-// This stateful (dynamic) portion generates random words to display as
-// immutable text above on every refresh / hot reload of the app
+// initiate dynamic feature - RandomWordsState
 class RandomWords extends StatefulWidget {
-  // stateful widgets are dynamic
   const RandomWords({super.key});
 
   @override
   State<RandomWords> createState() => _RandomWordsState();
 }
 
+// Key page features
 class _RandomWordsState extends State<RandomWords> {
+  // set immutable values
   final _suggestions = <WordPair>[];
-  final _biggerFont = const TextStyle(fontSize: 18); // TextStyle widget
-  // will be essential in future
-  final _saved = <WordPair>{}; //Set ({}) differs to list as does not allow
-  // duplicates
+  final _saved = <WordPair>{};
+  final _biggerFont = const TextStyle(fontSize: 18);
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemBuilder: (context, i) {
-        if (i.isOdd) return const Divider();
-
-        final index = i ~/ 2;
-        if (index >= _suggestions.length) {
-          _suggestions.addAll(generateWordPairs().take(10));
-        }
-        final alreadySaved = _saved.contains(_suggestions[index]);
-
-        return ListTile(
-          title: Text(
-            _suggestions[index].asPascalCase,
-            style: _biggerFont,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Startup Name Generator'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.list),
+            onPressed: _pushSaved,
+            tooltip: 'Saved Suggestions',
           ),
-          trailing: Icon(
-            alreadySaved ? Icons.favorite : Icons.favorite_border,
-            color: alreadySaved ? Colors.red : null,
-            semanticLabel: alreadySaved ? 'Remove from saved' : 'Save',
-          ),
-          onTap: () {
-            setState(() {
-              if (alreadySaved) {
-                _saved.remove(_suggestions[index]);
-              } else {
-                _saved.add(_suggestions[index]);
-              }
-            }); // setState
-          }, // onTap
-        );
-      }, // itemBuilder
+        ],
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemBuilder: (context, i) {
+          if (i.isOdd) return const Divider();
+
+          final index = i ~/ 2; // Needed to count how many random words need
+          // to be retrieved, given the lines scrolled
+
+          if (index >= _suggestions.length) {
+            // if index of scroll is further
+            // than current length of word pairs
+            _suggestions.addAll(generateWordPairs().take(10));
+          } // generate more
+
+          final alreadySaved = _saved.contains(_suggestions[index]); // if
+          // saved - through onTap of icon below
+
+          return ListTile(
+            title: Text(
+              _suggestions[index].asPascalCase,
+              style: _biggerFont,
+            ),
+            trailing: Icon(
+              alreadySaved ? Icons.favorite : Icons.favorite_border,
+              color: alreadySaved ? Color.fromARGB(255, 255, 17, 0) : null,
+              semanticLabel: alreadySaved ? 'Remove from saved' : 'Save',
+            ),
+            onTap: () {
+              setState(() {
+                if (alreadySaved) {
+                  // if contained within the saved
+                  // list (added favourites), remove from saved
+                  _saved.remove(_suggestions[index]);
+                } else {
+                  _saved.add(_suggestions[index]);
+                }
+              });
+            },
+          );
+        },
+      ),
     );
-  } // build
-} // state class
+  }
+
+  void _pushSaved() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) {
+          final tiles = _saved.map(
+            (pair) {
+              return ListTile(
+                title: Text(
+                  pair.asPascalCase,
+                  style: _biggerFont,
+                ),
+              );
+            },
+          );
+          final divided = tiles.isNotEmpty
+              ? ListTile.divideTiles(
+                  context: context,
+                  tiles: tiles,
+                ).toList()
+              : <Widget>[];
+
+          return Scaffold(
+            // page scaffold
+            appBar: AppBar(
+              title: const Text('Saved Suggestions'),
+            ),
+            body: ListView(children: divided),
+          );
+        },
+      ),
+    );
+  }
+}
